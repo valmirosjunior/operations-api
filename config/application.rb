@@ -28,5 +28,11 @@ module OperationsApi
     # Middleware like session, flash, cookies can be added back manually.
     # Skip views, helpers and assets when generating a new resource.
     config.api_only = true
+
+    # Configure generators to skip test files and fixtures (using RSpec instead)
+    config.generators do |g|
+      g.test_framework false
+      g.fixture false
+    end
   end
 end
