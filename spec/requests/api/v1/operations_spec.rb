@@ -66,7 +66,7 @@ RSpec.describe 'API::V1::Operations', type: :request do
       it 'returns unprocessable entity status' do
         post '/api/v1/operations', params: invalid_params, as: :json
 
-        expect(response).to have_http_status(:unprocessable_entity)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it 'returns error messages' do
@@ -74,6 +74,27 @@ RSpec.describe 'API::V1::Operations', type: :request do
 
         json = JSON.parse(response.body)
         expect(json['errors']).to be_present
+      end
+    end
+
+    context 'when an unexpected error occurs' do
+      before do
+        # rubocop:disable RSpec/AnyInstance
+        allow_any_instance_of(::OperationInteractor).to receive(:execute).and_raise(StandardError.new('Unexpected error'))
+        # rubocop:enable RSpec/AnyInstance
+      end
+
+      it 'returns internal server error status' do
+        post '/api/v1/operations', params: params, as: :json
+
+        expect(response).to have_http_status(:internal_server_error)
+      end
+
+      it 'returns error message in test environment' do
+        post '/api/v1/operations', params: params, as: :json
+
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('Unexpected error')
       end
     end
   end
