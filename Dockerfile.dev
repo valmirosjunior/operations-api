@@ -1,0 +1,45 @@
+# syntax=docker/dockerfile:1
+
+# Dockerfile específico para desenvolvimento
+ARG RUBY_VERSION=3.2.3
+FROM docker.io/library/ruby:$RUBY_VERSION-slim
+
+WORKDIR /api
+
+# Install base packages and build tools
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y \
+      build-essential \
+      curl \
+      git \
+      libjemalloc2 \
+      libpq-dev \
+      libvips \
+      libyaml-dev \
+      postgresql-client \
+      pkg-config && \
+    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+
+# Set development environment
+ENV RAILS_ENV="development" \
+    BUNDLE_PATH="/usr/local/bundle" \
+    BUNDLE_WITHOUT="" \
+    PATH="/api/bin:/usr/local/bundle/ruby/3.2.0/bin:$PATH"
+
+# Create non-root user and set permissions
+RUN groupadd --system --gid 1000 rails && \
+    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash && \
+    mkdir -p /usr/local/bundle && \
+    chown -R rails:rails /usr/local/bundle
+
+# Copy Gemfiles and install gems
+COPY --chown=rails:rails Gemfile Gemfile.lock ./
+RUN bundle install && \
+    bundle binstubs --all
+
+USER 1000:1000
+
+# Entrypoint prepares the database
+ENTRYPOINT ["/api/bin/docker-entrypoint"]
+
+EXPOSE 3000
